@@ -11,3 +11,4 @@ pydantic-mongo==2.3.0
 openai==1.35.13
 cohere==5.3.0
 requests==2.31.0
+qdrant-client==1.10.1
