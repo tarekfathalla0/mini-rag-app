@@ -1,14 +1,23 @@
 from enum import Enum
 
 class LLMType(Enum):
-    OPENAI = "openai"
-    AZURE_OPENAI = "azure_openai"
-    ANTHROPIC = "anthropic"
-    COHERE = "cohere"
-    CUSTOM = "custom"
+    OPENAI = "OPENAI"
+    COHERE = "COHERE"
+    OPENROUTER = "OPENROUTER"
 
 class OpenAIEnums(Enum):
     SYSTEM = "system"
     USER = "user"
     ASSISTANT = "assistant"
 
+class CoHereEnums(Enum):
+    SYSTEM = "SYSTEM"
+    USER = "USER"
+    ASSISTANT = "CHATBOT"
+
+    DOCUMENT = "search_document"
+    QUERY = "search_query"
+
+class DocumentTypeEnum(Enum):
+    DOCUMENT = "document"
+    QUERY = "query"
