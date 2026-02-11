@@ -1,9 +1,10 @@
 from enum import Enum
 
-class LLMType(Enum):
+class LLMEnums(Enum):
     OPENAI = "OPENAI"
     COHERE = "COHERE"
     OPENROUTER = "OPENROUTER"
+    AZURE = "AZURE"
 
 class OpenAIEnums(Enum):
     SYSTEM = "system"

@@ -1,132 +1,86 @@
 from ..LLMInterface import LLMInterface
-from ..LLMEnums import DocumentTypeEnum
 import requests
 import logging
-import json
-
 
 class OpenRouterProvider(LLMInterface):
-    def __init__(
-        self,
-        api_key: str,
-        default_input_max_characters: int = 1000,
-        default_generation_max_output_tokens: int = 1000,
-        default_generation_temperature: float = 0.1,
-        site_url: str = None,
-        site_title: str = None
-    ):
+    """
+    Provider for OpenRouter API.
+    """
+
+    def __init__(self,
+                 api_key: str,
+                 api_url: str = "https://openrouter.ai/api/v1/chat/completions",
+                 default_input_max_characters: int = 1000,
+                 default_generation_max_output_tokens: int = 1000,
+                 default_generation_temperature: float = 0.1):
+
         self.api_key = api_key
+        self.api_url = api_url
 
         self.default_input_max_characters = default_input_max_characters
         self.default_generation_max_output_tokens = default_generation_max_output_tokens
         self.default_generation_temperature = default_generation_temperature
 
         self.generation_model_id = None
-
-        self.site_url = site_url
-        self.site_title = site_title
+        self.embedding_model_id = None
+        self.embedding_size = None
 
         self.logger = logging.getLogger(__name__)
-
-        self.base_url = "https://openrouter.ai/api/v1/chat/completions"
 
     def set_generation_model(self, model_id: str):
         self.generation_model_id = model_id
 
+    def set_embedding_model(self, model_id: str, embedding_size: int):
+        self.embedding_model_id = model_id
+        self.embedding_size = embedding_size
+
     def process_text(self, text: str):
         return text[:self.default_input_max_characters].strip()
 
-    def generate_text(
-        self,
-        prompt: str,
-        max_output_tokens: int = None,
-        chat_history: list = [],
-        temperature: float = None
-    ):
-        if not self.api_key:
-            self.logger.error("OpenRouter API key not set.")
-            return None
+    def generate_text(self, prompt: str, chat_history: list = [],
+                      max_output_tokens: int = None,
+                      temperature: float = None):
 
         if not self.generation_model_id:
-            self.logger.error("Generation model ID not set.")
+            self.logger.error("Generation model for OpenRouter was not set")
             return None
 
-        max_output_tokens = (
-            max_output_tokens
-            if max_output_tokens
-            else self.default_generation_max_output_tokens
-        )
-
-        temperature = (
-            temperature
-            if temperature is not None
-            else self.default_generation_temperature
-        )
-
-        messages = []
-
-        for msg in chat_history:
-            messages.append({
-                "role": msg.get("role"),
-                "content": msg.get("content")
-            })
-
-        messages.append({
-            "role": "user",
-            "content": self.process_text(prompt)
-        })
+        max_output_tokens = max_output_tokens or self.default_generation_max_output_tokens
+        temperature = temperature or self.default_generation_temperature
 
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json"
         }
 
-        if self.site_url:
-            headers["HTTP-Referer"] = self.site_url
-
-        if self.site_title:
-            headers["X-Title"] = self.site_title
-
         payload = {
             "model": self.generation_model_id,
-            "messages": messages,
-            "temperature": temperature,
-            "max_tokens": max_output_tokens
+            "messages": chat_history + [{"role": "user", "content": self.process_text(prompt)}],
+            "max_tokens": max_output_tokens,
+            "temperature": temperature
         }
 
-        response = requests.post(
-            url=self.base_url,
-            headers=headers,
-            data=json.dumps(payload)
-        )
+        try:
+            response = requests.post(self.api_url, json=payload, headers=headers)
+            response.raise_for_status()
+            data = response.json()
 
-        if response.status_code != 200:
-            self.logger.error(
-                f"OpenRouter API error: {response.status_code} - {response.text}"
-            )
+            if "choices" in data and len(data["choices"]) > 0:
+                return data["choices"][0]["message"]["content"]
+            else:
+                self.logger.error("No choices returned from OpenRouter")
+                return None
+        except Exception as e:
+            self.logger.error(f"Error generating text via OpenRouter: {e}")
             return None
-
-        data = response.json()
-
-        if (
-            not data
-            or "choices" not in data
-            or not data["choices"]
-            or "message" not in data["choices"][0]
-        ):
-            self.logger.error("Invalid response from OpenRouter API.")
-            return None
-
-        return data["choices"][0]["message"]["content"]
 
     def embed_text(self, text: str, document_type: str = None):
-        self.logger.error(
-            "OpenRouter does not provide a unified embeddings API."
-        )
+        """
+        OpenRouter may not support embeddings directly.
+        If it does, implement similarly to generate_text but using the embeddings endpoint.
+        """
+        self.logger.warning("Embedding via OpenRouter is not implemented.")
         return None
-
+    
     def construct_prompt(self, prompt: str, role: str):
-        return {
-            "role": role,
-            "content": self.process_text(prompt)
-        }
+        return {"role": role, "content": self.process_text(prompt)}
