@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import List
+from models.db_shcemes import RetrievedDocument
 
 class VectorDBInterface(ABC):
     @abstractmethod
@@ -48,5 +49,5 @@ class VectorDBInterface(ABC):
 
     @abstractmethod
     def search_by_vector(
-        self, collection_name: str, vector: List, limit: int):
+        self, collection_name: str, vector: List, limit: int) -> List[RetrievedDocument]:
         pass

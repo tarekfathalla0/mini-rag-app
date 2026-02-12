@@ -1,4 +1,5 @@
 from ..LLMInterface import LLMInterface
+from ..LLMEnums import OpenAIEnums
 import requests
 import logging
 
@@ -24,6 +25,8 @@ class OpenRouterProvider(LLMInterface):
         self.generation_model_id = None
         self.embedding_model_id = None
         self.embedding_size = None
+
+        self.enums = OpenAIEnums
 
         self.logger = logging.getLogger(__name__)
 
